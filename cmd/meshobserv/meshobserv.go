@@ -39,7 +39,7 @@ func handleMessage(from uint32, topic string, portNum generated.PortNum, payload
 	Receiving.Store(true)
 	switch portNum {
 	case generated.PortNum_TEXT_MESSAGE_APP:
-		log.Printf("[msg] (%v) <%v> TXT: %s", topic, from, payload)
+		log.Printf("[msg] (%v) <%v> %s", topic, from, payload)
 	case generated.PortNum_POSITION_APP:
 		var position generated.Position
 		if err := proto.Unmarshal(payload, &position); err != nil {
@@ -50,7 +50,6 @@ func handleMessage(from uint32, topic string, portNum generated.PortNum, payload
 		longitude := position.GetLongitudeI()
 		altitude := position.GetAltitude()
 		precision := position.GetPrecisionBits()
-		log.Printf("[msg] (%v) <%v> POS: (%v, %v, %v)/%v", topic, from, latitude, longitude, altitude, precision)
 		if latitude == 0 && longitude == 0 {
 			return
 		}
@@ -71,7 +70,6 @@ func handleMessage(from uint32, topic string, portNum generated.PortNum, payload
 		shortName := user.GetShortName()
 		hwModel := user.GetHwModel().String()
 		role := user.GetRole().String()
-		log.Printf("[msg] (%v) <%v> NODE: %v (%v) %v %v", topic, from, longName, shortName, role, hwModel)
 		if len(longName) == 0 {
 			return
 		}
@@ -93,7 +91,6 @@ func handleMessage(from uint32, topic string, portNum generated.PortNum, payload
 			chUtil := deviceMetrics.GetChannelUtilization()
 			airUtilTx := deviceMetrics.GetAirUtilTx()
 			uptime := deviceMetrics.GetUptimeSeconds()
-			log.Printf("[msg] (%v) <%v> PWR: %v%% (%vV) %vs UTIL: %v%%, %v%%", topic, from, batteryLevel, voltage, uptime, chUtil, airUtilTx)
 			NodesMutex.Lock()
 			if Nodes[from] == nil {
 				Nodes[from] = meshtastic.NewNode(topic)
@@ -111,10 +108,6 @@ func handleMessage(from uint32, topic string, portNum generated.PortNum, payload
 			radiation := envMetrics.GetRadiation()
 			rainfall1 := envMetrics.GetRainfall_1H()
 			rainfall24 := envMetrics.GetRainfall_24H()
-			log.Printf(
-				"[msg] (%v) <%v> ENV: %v℃ %v%% %vhPa WIND: %v @ %v G %v RAIN: %v, %v LUX: %v RAD: %v", topic, from,
-				temperature, relativeHumidity, barometricPressure, windDirection, windSpeed, windGust, rainfall1, rainfall24, lux, radiation,
-			)
 			NodesMutex.Lock()
 			if Nodes[from] == nil {
 				Nodes[from] = meshtastic.NewNode(topic)
@@ -141,7 +134,6 @@ func handleMessage(from uint32, topic string, portNum generated.PortNum, payload
 		}
 		nodeNum := neighborInfo.GetNodeId()
 		neighbors := neighborInfo.GetNeighbors()
-		log.Printf("[msg] (%v) <%v> NGHBR: %v neighbors of %v", topic, from, len(neighbors), nodeNum)
 		if nodeNum != from {
 			return
 		}
@@ -179,12 +171,6 @@ func handleMessage(from uint32, topic string, portNum generated.PortNum, payload
 		longitude := mapReport.GetLongitudeI()
 		altitude := mapReport.GetAltitude()
 		precision := mapReport.GetPositionPrecision()
-		log.Printf(
-			"[msg] (%v) <%v> MAP: %v (%v) %v %v %v %v %v %v %v POS: (%v, %v, %v)/%v", topic, from,
-			longName, shortName, role, hwModel,
-			fwVersion, region, modemPreset, hasDefaultCh, onlineLocalNodes,
-			latitude, longitude, altitude, precision,
-		)
 		if len(longName) == 0 {
 			return
 		}
@@ -200,8 +186,6 @@ func handleMessage(from uint32, topic string, portNum generated.PortNum, payload
 		Nodes[from].UpdatePosition(latitude, longitude, altitude, precision)
 		Nodes[from].UpdateSeenBy(topic)
 		NodesMutex.Unlock()
-	default:
-		log.Printf("[msg] (%v) <%v> %s", topic, from, portNum)
 	}
 }
 
@@ -214,7 +198,7 @@ func main() {
 	if len(dbPath) > 0 {
 		err := Nodes.LoadFile(dbPath)
 		if err != nil && !errors.Is(err, fs.ErrNotExist) {
-			log.Fatalf("[error] load nodes: %v", err)
+			log.Fatalf("[fatal] load nodes: %v", err)
 		}
 		log.Printf("[info] loaded %v nodes from disk", len(Nodes))
 	}
@@ -226,7 +210,7 @@ func main() {
 	if len(blockedPath) > 0 {
 		f, err := os.Open(blockedPath)
 		if err != nil {
-			log.Fatalf("[error] open blocklist: %v", err)
+			log.Fatalf("[fatal] open blocklist: %v", err)
 		}
 		s := bufio.NewScanner(f)
 		for s.Scan() {
@@ -239,7 +223,7 @@ func main() {
 		f.Close()
 		err = s.Err()
 		if err != nil {
-			log.Fatalf("[error] read blocklist: %v", err)
+			log.Fatalf("[fatal] read blocklist: %v", err)
 		}
 	}
 	// maintain per-node message counters for rate limiting
@@ -282,7 +266,7 @@ func main() {
 	}
 	err := client.Connect()
 	if err != nil {
-		log.Fatalf("[error] connect: %v", err)
+		log.Fatalf("[fatal] connect: %v", err)
 	}
 	// start NodeDB prune and write loop
 	go func() {
@@ -294,13 +278,13 @@ func main() {
 				valid := Nodes.GetValid()
 				err := valid.WriteFile(dbPath)
 				if err != nil {
-					log.Fatalf("[error] write nodes: %v", err)
+					log.Fatalf("[fatal] write nodes: %v", err)
 				}
 				log.Printf("[info] wrote %v nodes to disk", len(valid))
 			}
 			NodesMutex.Unlock()
 			if !Receiving.CompareAndSwap(true, false) {
-				log.Fatal("[crit] no messages received")
+				log.Fatal("[fatal] no messages received")
 			}
 		}
 	}()

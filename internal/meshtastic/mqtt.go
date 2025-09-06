@@ -55,7 +55,7 @@ func (c *MQTTClient) Connect() error {
 	if err := token.Error(); err != nil {
 		return err
 	}
-	log.Print("[info] connected")
+	log.Print("[mqtt] connected")
 	topics := make(map[string]byte)
 	for _, topic := range c.Topics {
 		topics[topic] = 0
@@ -65,7 +65,7 @@ func (c *MQTTClient) Connect() error {
 	if err := token.Error(); err != nil {
 		return err
 	}
-	log.Print("[info] subscribed")
+	log.Print("[mqtt] subscribed")
 	return nil
 }
 
@@ -90,18 +90,15 @@ func (c *MQTTClient) handleMessage(_ mqtt.Client, msg mqtt.Message) {
 	// get MeshPacket
 	packet := envelope.GetPacket()
 	if packet == nil {
-		log.Printf("[warn] skipping ServiceEnvelope with no MeshPacket on %v", topic)
 		return
 	}
 	// no anonymous packets
 	from := packet.GetFrom()
 	if from == 0 {
-		log.Printf("[warn] skipping MeshPacket from unknown on %v", topic)
 		return
 	}
 	// ignore PKI direct messages
 	if packet.GetPkiEncrypted() {
-		log.Printf("[info] skipping PKI encrypted MeshPacket from %v on %v", from, topic)
 		return
 	}
 	// check sender
@@ -114,7 +111,6 @@ func (c *MQTTClient) handleMessage(_ mqtt.Client, msg mqtt.Message) {
 		// data must be (probably) encrypted
 		encrypted := packet.GetEncrypted()
 		if encrypted == nil {
-			log.Printf("[warn] skipping MeshPacket from %v with no data on %v", from, topic)
 			return
 		}
 		// decrypt
@@ -134,7 +130,6 @@ func (c *MQTTClient) handleMessage(_ mqtt.Client, msg mqtt.Message) {
 }
 
 func init() {
-	mqtt.ERROR = log.New(os.Stderr, "[error] mqtt: ", log.Flags()|log.Lmsgprefix)
-	mqtt.CRITICAL = log.New(os.Stderr, "[crit] mqtt: ", log.Flags()|log.Lmsgprefix)
-	mqtt.WARN = log.New(os.Stderr, "[warn] mqtt: ", log.Flags()|log.Lmsgprefix)
+	mqtt.ERROR = log.New(os.Stderr, "[mqtt] error: ", log.Flags()|log.Lmsgprefix)
+	mqtt.CRITICAL = log.New(os.Stderr, "[mqtt] crit: ", log.Flags()|log.Lmsgprefix)
 }
