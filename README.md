@@ -14,11 +14,11 @@ A nearly live map of [Meshtastic](https://meshtastic.org/) nodes seen by the off
 These are general requirements. Refer to the [official docs](https://meshtastic.org/docs/) or reach out to the fantastic [Meshtastic](https://meshtastic.org/) community for additional support.
 - First, make sure you are running a [recent firmware](https://meshtastic.org/downloads/) version
 - Use the default primary channel and encryption key
-- Enable "OK to MQTT" in LoRa configuration (signaling you want your messages uplinked via MQTT)
+- Enable "OK to MQTT" in LoRa configuration, signaling you want your messages uplinked via MQTT
 - Enable position reports from your node
   - This may mean enabling your node's built-in GPS, sharing your phone's location via the app, or setting a fixed position
   - Ensure "Position enabled" is enabled on the primary channel
-  - Ensure "Precise location" is disabled on the primary channel and the configured precision is no more than 364 m / 1194 ft
+  - Ensure "Precise location" is disabled on the primary channel and the configured precision is between 23.3 km (14.5 miles) and 364 m (1194 ft), inclusive
     - See [Restrictions on the Public MQTT Server](https://meshtastic.org/docs/software/integrations/mqtt/#restrictions-on-the-public-mqtt-server) for details
 
 If your node can be heard by another node already reporting to MQTT, that's it!
@@ -30,7 +30,7 @@ If your node can be heard by another node already reporting to MQTT, that's it!
 - Enable MQTT uplink on your primary channel
   - It is not necessary, and not recommended unless you know what you're doing, to enable MQTT downlink
 
-Note, the "Map reporting" option in the MQTT configuration reports [additional data](https://meshtastic.org/docs/configuration/module/mqtt/#map-reporting-enabled) about the local node only.
+Note: The "Map reporting" option in the MQTT configuration reports [additional data](https://meshtastic.org/docs/configuration/module/mqtt/#map-reporting-enabled) about your node only. It does not report other nodes heard over LoRa.
 
 ### Does the map allow manual/self-reported nodes (not over MQTT)?
 No, and that's a feature. The goal of this map is to provide a reasonably up-to-date, reliable data source for node locations.
