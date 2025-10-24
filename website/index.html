@@ -454,6 +454,7 @@
     }
   })
   // let's go!!!
+  attribution.setPrefix('Loading node data&hellip;')
   drawMap().then(() => {
     if (window.location.hash && !showNode(window.location.hash.slice(1))) {
       history.replaceState(null, '', window.location.pathname)
